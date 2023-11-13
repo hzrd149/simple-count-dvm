@@ -12,14 +12,6 @@
     "type": "git",
     "url": "https://github.com/hzrd149/simple-count-dvm.git"
   },
-  "types": "./build/src/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./build/src/index.mjs",
-      "require": "./build/src/index.cjs"
-    },
-    "./types": "./build/src/index.d.ts"
-  },
   "scripts": {
     "build": "tsc-multi",
     "prepare": "yarn run build",
