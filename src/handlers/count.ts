@@ -1,9 +1,9 @@
-import type {Event} from 'nostr-tools';
-import type {Filter} from 'paravel';
-import {Tags, createEvent, Subscription, now} from 'paravel';
-import {seconds} from 'hurdak';
-import type {DVM} from '../dvm';
-import {getInputParams, getInputValue} from '../util';
+import type { Event } from "nostr-tools";
+import type { Filter } from "paravel";
+import { Tags, createEvent, Subscription, now } from "paravel";
+import { seconds } from "hurdak";
+import type { DVM } from "../dvm";
+import { getInputParams, getInputValue } from "../util";
 
 type CountWithProgressOpts = {
   dvm: DVM;
@@ -14,57 +14,53 @@ type CountWithProgressOpts = {
 };
 
 const getGroupKey = (group: string, e: Event) => {
-  if (['content', 'pubkey'].includes(group)) {
+  if (["content", "pubkey"].includes(group)) {
     return (e as any)[group];
   }
 
-  if (group === 'reply') {
+  if (group === "reply") {
     return Tags.from(e).getReply().getValue();
   }
 
-  if (group === 'root') {
+  if (group === "root") {
     return Tags.from(e).getRoot().getValue();
   }
 
   if (group.match(/^created_at\/\d+$/)) {
-    return Math.floor(e.created_at / parseInt(group.split('/').slice(-1)[0]));
+    return Math.floor(e.created_at / parseInt(group.split("/").slice(-1)[0]));
   }
 
-  return Tags.from(e).type(group).getValue() || '';
+  return Tags.from(e).type(group).getValue() || "";
 };
 
-async function* countWithProgress({
-  dvm,
-  event,
-  filters,
-  init,
-  getResult,
-}: CountWithProgressOpts) {
+async function* countWithProgress({ dvm, event, filters, init, getResult }: CountWithProgressOpts) {
+  console.log("Opening sub to", getInputParams(event, "relay"));
+
   const sub = new Subscription({
     filters,
     timeout: 30000,
     closeOnEose: true,
-    executor: dvm.getExecutor(getInputParams(event, 'relay')),
+    executor: dvm.getExecutor(getInputParams(event, "relay")),
   });
 
   init(sub);
 
   let done = false;
-  let prev = '0';
+  let prev = "0";
 
-  sub.on('close', () => {
+  sub.on("close", () => {
     done = true;
   });
 
   while (!done) {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const cur = getResult();
 
     if (cur !== prev) {
       yield createEvent(7000, {
         content: cur,
-        tags: [['expiration', String(now() + seconds(1, 'minute'))]],
+        tags: [["expiration", String(now() + seconds(1, "minute"))]],
       });
     }
 
@@ -73,22 +69,23 @@ async function* countWithProgress({
 
   yield createEvent(event.kind + 1000, {
     content: getResult(),
-    tags: [['expiration', String(now() + seconds(1, 'hour'))]],
+    tags: [["expiration", String(now() + seconds(1, "hour"))]],
   });
 }
 
 export async function* handleCount(dvm: DVM, event: Event) {
-  const groups = getInputParams(event, 'group');
+  const groups = getInputParams(event, "group");
+  const filters = JSON.parse(getInputValue(event)!) as Filter | Filter[];
 
-  const result = groups.length > 0 ? {} : 0;
+  let result = groups.length > 0 ? {} : 0;
 
   yield* countWithProgress({
     dvm,
     event,
-    filters: JSON.parse(getInputValue(event)),
+    filters: Array.isArray(filters) ? filters : [filters],
     getResult: () => JSON.stringify(result),
     init: (sub: Subscription) => {
-      sub.on('event', (e: Event) => {
+      sub.on("event", (e: Event) => {
         if (groups.length === 0) {
           (result as number)++;
         } else {
@@ -118,5 +115,5 @@ export async function* handleCount(dvm: DVM, event: Event) {
 }
 
 export default {
-  '5400': handleCount,
+  "5400": handleCount,
 };

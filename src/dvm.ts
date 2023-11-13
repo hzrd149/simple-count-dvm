@@ -1,7 +1,7 @@
-import type {Event, EventTemplate} from 'nostr-tools';
-import {getSignature, getPublicKey, getEventHash} from 'nostr-tools';
-import {now, Subscription, Pool, Relays, Executor} from 'paravel';
-import {getInputTag} from './util';
+import type { Event, EventTemplate } from "nostr-tools";
+import { getSignature, getPublicKey, getEventHash } from "nostr-tools";
+import { now, Subscription, Pool, Relays, Executor } from "paravel";
+import { getInputTag } from "./util";
 
 export type DVMHandler = (dvm: DVM, e: Event) => AsyncGenerator<EventTemplate>;
 
@@ -23,39 +23,39 @@ export class DVM {
   getExecutor(urls: string[]) {
     return new Executor(
       new Relays(
-        urls.map(url => {
+        urls.map((url) => {
           const connection = this.pool.get(url);
 
           connection.socket.ready.catch(() => null);
 
           return connection;
-        })
-      )
+        }),
+      ),
     );
   }
 
   async listen() {
-    const {handlers, relays} = this.opts;
-    const kinds = Array.from(Object.keys(handlers)).map(k => parseInt(k));
+    const { handlers, relays } = this.opts;
+    const kinds = Array.from(Object.keys(handlers)).map((k) => parseInt(k));
 
     this.stopped = false;
 
     while (!this.stopped) {
-      await new Promise<void>(resolve => {
+      await new Promise<void>((resolve) => {
         const sub = new Subscription({
-          timeout: 30_000,
+          timeout: 30000,
           executor: this.getExecutor(relays),
-          filters: [{kinds, since: now() - 30}],
+          filters: [{ kinds, since: now() - 30 }],
         });
 
-        sub.on('event', e => this.onEvent(e));
-        sub.on('close', () => resolve());
+        sub.on("event", (e) => this.onEvent(e));
+        sub.on("close", () => resolve());
       });
     }
   }
 
   async onEvent(e: Event) {
-    if (this.seen.has(e.id)) {
+    if (this.seen.has(e.id) || !getInputTag(e)) {
       return;
     }
 
@@ -67,29 +67,33 @@ export class DVM {
 
     this.seen.add(e.id);
 
-    if (process.env.NIKABRIK_ENABLE_LOGGING) {
-      console.info('Handling request', e);
+    if (process.env.DVM_ENABLE_LOGGING) {
+      console.info("Handling request", e);
     }
 
-    for await (const event of handler(this, e)) {
-      if (event.kind !== 7000) {
-        event.tags.push(['request', JSON.stringify(e)]);
-        event.tags.push(getInputTag(e)!);
+    try {
+      for await (const event of handler(this, e)) {
+        if (event.kind !== 7000) {
+          event.tags.push(["request", JSON.stringify(e)]);
+          event.tags.push(getInputTag(e)!);
+        }
+
+        event.tags.push(["p", e.pubkey]);
+        event.tags.push(["e", e.id]);
+
+        if (process.env.DVM_ENABLE_LOGGING) {
+          console.info("Publishing event", event);
+        }
+
+        this.publish(event);
       }
-
-      event.tags.push(['p', e.pubkey]);
-      event.tags.push(['e', e.id]);
-
-      if (process.env.NIKABRIK_ENABLE_LOGGING) {
-        console.info('Publishing event', event);
-      }
-
-      this.publish(event);
+    } catch (e) {
+      console.log("Failed to handle event", e);
     }
   }
 
   async publish(template: EventTemplate) {
-    const {sk, relays} = this.opts;
+    const { sk, relays } = this.opts;
     const executor = this.getExecutor(relays);
     const event = template as any;
 
@@ -97,14 +101,14 @@ export class DVM {
     event.id = getEventHash(event);
     event.sig = getSignature(event, sk);
 
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       const done = () => {
         resolve();
         executor.target.cleanup();
       };
 
       executor.publish(event, {
-        verb: 'EVENT',
+        verb: "EVENT",
         onOk: done,
         onError: done,
       });

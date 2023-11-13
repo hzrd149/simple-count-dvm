@@ -1,8 +1,8 @@
 {
-  "name": "nikabrik",
-  "version": "0.0.2",
-  "description": "A utility for building DVMs",
-  "author": "hodlbod",
+  "name": "simple-count-dvm",
+  "version": "0.1.0",
+  "description": " An inefficient counting DVM ",
+  "author": "hzrd149",
   "license": "MIT",
   "keywords": [
     "nostr"
@@ -10,7 +10,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/coracle-social/nikabrik.git"
+    "url": "https://github.com/hzrd149/simple-count-dvm.git"
   },
   "types": "./build/src/index.d.ts",
   "exports": {
@@ -21,24 +21,23 @@
     "./types": "./build/src/index.d.ts"
   },
   "scripts": {
-    "pub": "npm i && npm run lint && tsc-multi && npm publish",
     "build": "tsc-multi",
-    "clean": "gts clean",
-    "lint": "gts lint",
-    "fix": "gts fix",
     "prepare": "yarn run build",
-    "pretest": "yarn run build",
-    "posttest": "yarn run lint"
+    "dev": "nodemon build/src/server.mjs",
+    "start": "node build/src/server.mjs",
+    "format": "prettier --ignore-path .prettierignore -w ."
   },
   "dependencies": {
     "dotenv": "^16.3.1",
     "hurdak": "^0.2.6",
     "nostr-tools": "^1.15.0",
-    "paravel": "^0.4.1"
+    "paravel": "^0.4.3",
+    "prettier": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "20.4.6",
     "gts": "^5.0.1",
+    "nodemon": "^3.0.1",
     "npm-run-all": "^4.1.5",
     "onchange": "^7.1.0",
     "tsc-multi": "^1.1.0",
