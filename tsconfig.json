@@ -1,10 +1,11 @@
 {
-  "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
-    "rootDir": ".",
+    "allowSyntheticDefaultImports": true,
+    "target": "ESNext",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
     "outDir": "build",
-    "esModuleInterop": true,
+    "removeComments": false,
     "skipLibCheck": true
-  },
-  "include": ["src/**/*.ts"]
+  }
 }
