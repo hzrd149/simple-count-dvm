@@ -4,4 +4,4 @@ WORKDIR /app
 COPY . /app/
 RUN yarn install && yarn build
 
-ENTRYPOINT [ "node", "./build/src/server.mjs" ]
+ENTRYPOINT [ "node", "./build/index.js" ]

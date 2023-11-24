@@ -7,6 +7,5 @@ services:
     environment:
       NOSTR_SECRET_KEY: "<hex key>"
       NOSTR_RELAYS: "<relay url>,<relay url>"
-      NODE_ENV: development
     volumes:
       - ./data:/data
